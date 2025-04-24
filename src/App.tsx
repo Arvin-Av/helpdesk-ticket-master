@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,93 +24,95 @@ import ProtectedRoute from "./components/ProtectedRoute";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-            {/* User protected routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <UserDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/my-tickets" 
-              element={
-                <ProtectedRoute>
-                  <MyTickets />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/new-ticket" 
-              element={
-                <ProtectedRoute>
-                  <NewTicket />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/ticket/:ticketId" 
-              element={
-                <ProtectedRoute>
-                  <TicketDetails />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } 
-            />
+              {/* User protected routes */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <UserDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/my-tickets" 
+                element={
+                  <ProtectedRoute>
+                    <MyTickets />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/new-ticket" 
+                element={
+                  <ProtectedRoute>
+                    <NewTicket />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/ticket/:ticketId" 
+                element={
+                  <ProtectedRoute>
+                    <TicketDetails />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
 
-            {/* Admin protected routes */}
-            <Route 
-              path="/admin/dashboard" 
-              element={
-                <ProtectedRoute requireAdmin>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/tickets" 
-              element={
-                <ProtectedRoute requireAdmin>
-                  <AdminTickets />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/ticket/:ticketId" 
-              element={
-                <ProtectedRoute requireAdmin>
-                  <AdminTicketDetails />
-                </ProtectedRoute>
-              } 
-            />
+              {/* Admin protected routes */}
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/tickets" 
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminTickets />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/ticket/:ticketId" 
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminTicketDetails />
+                  </ProtectedRoute>
+                } 
+              />
 
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;

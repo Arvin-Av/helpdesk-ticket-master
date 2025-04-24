@@ -46,7 +46,7 @@ const AdminDashboard = () => {
 
   // Recent activity (get most recently updated tickets)
   const recentActivity = [...tickets]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5);
 
   return (
@@ -197,7 +197,7 @@ const AdminDashboard = () => {
                   <div className="text-right">
                     <p className="text-sm">{getStatusLabel(ticket.status)}</p>
                     <p className="text-xs text-gray-500">
-                      {formatDate(ticket.updatedAt)}
+                      {formatDate(ticket.updated_at)}
                     </p>
                   </div>
                 </div>

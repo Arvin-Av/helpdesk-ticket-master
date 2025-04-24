@@ -13,8 +13,15 @@ export const supabaseService = {
       .select('*')
       .eq('id', user.id)
       .single();
-
-    return profile;
+    
+    if (profile) {
+      return {
+        ...profile,
+        email: user.email
+      };
+    }
+    
+    return null;
   },
 
   // Ticket related functions
@@ -33,10 +40,18 @@ export const supabaseService = {
     return data;
   },
 
-  async createTicket(ticket: Partial<Ticket>) {
+  async createTicket(ticket: Omit<Ticket, 'id' | 'created_at' | 'updated_at'>) {
     const { data, error } = await supabase
       .from('tickets')
-      .insert(ticket)
+      .insert({
+        subject: ticket.subject,
+        description: ticket.description,
+        priority: ticket.priority,
+        status: ticket.status,
+        department_id: ticket.department_id,
+        user_id: ticket.user_id,
+        assigned_to: ticket.assigned_to
+      })
       .select()
       .single();
 
@@ -59,10 +74,15 @@ export const supabaseService = {
     return data;
   },
 
-  async addComment(comment: Partial<Comment>) {
+  async addComment(comment: { ticket_id: string; user_id: string; content: string; is_internal?: boolean }) {
     const { data, error } = await supabase
       .from('comments')
-      .insert(comment)
+      .insert({
+        ticket_id: comment.ticket_id,
+        user_id: comment.user_id,
+        content: comment.content,
+        is_internal: comment.is_internal || false
+      })
       .select()
       .single();
 

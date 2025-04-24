@@ -8,7 +8,8 @@ export interface User {
   department?: string;
   department_id?: string;
   avatar_url?: string;
-  createdAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Ticket types

@@ -1,209 +1,169 @@
 
-import { User, Ticket, Comment, Department, TicketStatus, TicketPriority } from '@/types';
-import { users, tickets, departments } from './mockData';
-import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { supabaseService } from "./supabaseService";
+import { Ticket, Comment, Attachment, Department, User } from "@/types";
 
-// Simple delay to simulate API latency
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Auth Service
-export const authService = {
-  // Login function
-  login: async (email: string, password: string): Promise<User | null> => {
-    await delay(800);
-    const user = users.find(u => u.email === email);
-    
-    if (user) {
-      // In a real app, we would validate the password here
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      return user;
-    }
-    
-    throw new Error('Invalid email or password');
-  },
-  
-  // Register function
-  register: async (name: string, email: string, password: string, department: string): Promise<User> => {
-    await delay(1000);
-    
-    // Check if user already exists
-    if (users.some(u => u.email === email)) {
-      throw new Error('User with this email already exists');
-    }
-    
-    // Create new user
-    const newUser: User = {
-      id: `user-${users.length + 1}`,
-      name,
-      email,
-      role: 'user',
-      department,
-      createdAt: new Date().toISOString(),
-    };
-    
-    users.push(newUser);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-    
-    return newUser;
-  },
-  
-  // Logout function
-  logout: () => {
-    localStorage.removeItem('currentUser');
-  },
-  
-  // Get current user
-  getCurrentUser: (): User | null => {
-    const userStr = localStorage.getItem('currentUser');
-    return userStr ? JSON.parse(userStr) : null;
-  },
-};
-
-// Ticket Service
 export const ticketService = {
-  // Get all tickets
+  // Get all tickets (admin)
   getAllTickets: async (): Promise<Ticket[]> => {
-    await delay(800);
-    return [...tickets];
+    const { data } = await supabase
+      .from('tickets')
+      .select(`
+        *,
+        departments(name)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (!data) return [];
+
+    // Transform data to match our Ticket interface
+    return data.map(item => ({
+      id: item.id,
+      subject: item.subject,
+      description: item.description,
+      priority: item.priority,
+      status: item.status,
+      department: item.departments?.name || '',
+      department_id: item.department_id,
+      user_id: item.user_id,
+      assigned_to: item.assigned_to,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }));
   },
-  
-  // Get user tickets
+
+  // Get tickets for a specific user
   getUserTickets: async (userId: string): Promise<Ticket[]> => {
-    await delay(800);
-    return tickets.filter(ticket => ticket.createdBy === userId);
-  },
-  
-  // Get ticket by ID
-  getTicketById: async (ticketId: string): Promise<Ticket | undefined> => {
-    await delay(500);
-    return tickets.find(ticket => ticket.id === ticketId);
-  },
-  
-  // Create new ticket
-  createTicket: async (
-    subject: string,
-    description: string,
-    priority: TicketPriority,
-    department: string,
-    userId: string,
-    file?: File
-  ): Promise<Ticket> => {
-    await delay(1000);
+    const { data } = await supabase
+      .from('tickets')
+      .select(`
+        *,
+        departments(name)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
     
-    const newTicket: Ticket = {
-      id: `ticket-${tickets.length + 1}`,
-      subject,
-      description,
-      priority,
-      status: 'open',
-      department,
-      createdBy: userId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      comments: [],
-      attachments: file ? [{
-        id: `attachment-1`,
-        ticketId: `ticket-${tickets.length + 1}`,
-        fileName: file.name,
-        filePath: URL.createObjectURL(file),
-        fileSize: file.size,
-        fileType: file.type,
-        uploadedBy: userId,
-        uploadedAt: new Date().toISOString(),
-      }] : []
+    if (!data) return [];
+
+    // Transform data to match our Ticket interface
+    return data.map(item => ({
+      id: item.id,
+      subject: item.subject,
+      description: item.description,
+      priority: item.priority,
+      status: item.status,
+      department: item.departments?.name || '',
+      department_id: item.department_id,
+      user_id: item.user_id,
+      assigned_to: item.assigned_to,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }));
+  },
+
+  // Get a single ticket by ID
+  getTicketById: async (id: string): Promise<Ticket | null> => {
+    const { data } = await supabase
+      .from('tickets')
+      .select(`
+        *,
+        departments(name)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      subject: data.subject,
+      description: data.description,
+      priority: data.priority,
+      status: data.status,
+      department: data.departments?.name || '',
+      department_id: data.department_id,
+      user_id: data.user_id,
+      assigned_to: data.assigned_to,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
-    
-    tickets.push(newTicket);
-    
-    return newTicket;
   },
-  
-  // Update ticket status
-  updateTicketStatus: async (ticketId: string, status: TicketStatus): Promise<Ticket> => {
-    await delay(600);
-    
-    const ticket = tickets.find(t => t.id === ticketId);
-    if (!ticket) {
-      throw new Error('Ticket not found');
-    }
-    
-    ticket.status = status;
-    ticket.updatedAt = new Date().toISOString();
-    
-    return ticket;
+
+  // Create a new ticket
+  createTicket: async (ticket: Partial<Ticket>): Promise<Ticket> => {
+    return await supabaseService.createTicket({
+      subject: ticket.subject!,
+      description: ticket.description!,
+      priority: ticket.priority!,
+      status: ticket.status || 'open',
+      department_id: ticket.department_id!,
+      user_id: ticket.user_id!,
+      assigned_to: ticket.assigned_to
+    });
   },
-  
-  // Assign ticket
-  assignTicket: async (ticketId: string, userId: string): Promise<Ticket> => {
-    await delay(600);
+
+  // Update a ticket
+  updateTicket: async (id: string, updates: Partial<Ticket>): Promise<void> => {
+    const { error } = await supabase
+      .from('tickets')
+      .update({
+        subject: updates.subject,
+        description: updates.description,
+        priority: updates.priority,
+        status: updates.status,
+        department_id: updates.department_id,
+        assigned_to: updates.assigned_to,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
     
-    const ticket = tickets.find(t => t.id === ticketId);
-    if (!ticket) {
-      throw new Error('Ticket not found');
-    }
-    
-    ticket.assignedTo = userId;
-    ticket.status = 'in-progress';
-    ticket.updatedAt = new Date().toISOString();
-    
-    return ticket;
+    if (error) throw error;
   },
-  
-  // Add comment to ticket
-  addComment: async (ticketId: string, userId: string, content: string, isInternal: boolean): Promise<Comment> => {
-    await delay(700);
-    
-    const ticket = tickets.find(t => t.id === ticketId);
-    if (!ticket) {
-      throw new Error('Ticket not found');
-    }
-    
-    const user = users.find(u => u.id === userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
-    const newComment: Comment = {
-      id: `comment-${Math.floor(Math.random() * 1000)}`,
-      ticketId,
-      userId,
-      userName: user.name,
-      content,
-      isInternal,
-      createdAt: new Date().toISOString(),
-    };
-    
-    if (!ticket.comments) {
-      ticket.comments = [];
-    }
-    
-    ticket.comments.push(newComment);
-    ticket.updatedAt = new Date().toISOString();
-    
-    return newComment;
+
+  // Get comments for a ticket
+  getTicketComments: async (ticketId: string): Promise<Comment[]> => {
+    return await supabaseService.getTicketComments(ticketId);
   },
+
+  // Add a comment to a ticket
+  addComment: async (comment: Partial<Comment>): Promise<Comment> => {
+    return await supabaseService.addComment({
+      ticket_id: comment.ticket_id!,
+      user_id: comment.user_id!,
+      content: comment.content!,
+      is_internal: comment.is_internal
+    });
+  }
 };
 
-// Department Service
 export const departmentService = {
   // Get all departments
   getAllDepartments: async (): Promise<Department[]> => {
-    await delay(500);
-    return [...departments];
-  },
+    return await supabaseService.getDepartments();
+  }
 };
 
-// User Service
-export const userService = {
-  // Get all users
-  getAllUsers: async (): Promise<User[]> => {
-    await delay(700);
-    return [...users];
-  },
-  
-  // Get user by ID
-  getUserById: async (userId: string): Promise<User | undefined> => {
-    await delay(500);
-    return users.find(user => user.id === userId);
-  },
+export const fileService = {
+  // Upload a file attachment
+  uploadFile: async (file: File, ticketId: string): Promise<Attachment> => {
+    const result = await supabaseService.uploadFile(file, ticketId);
+    
+    // Get the public URL
+    const { data } = supabase.storage
+      .from('ticket-attachments')
+      .getPublicUrl(result.path);
+    
+    // Save the attachment metadata to the database
+    // Note: In a real app, you'd have a separate attachments table
+    return {
+      id: Math.random().toString(),
+      ticket_id: ticketId,
+      file_name: file.name,
+      file_path: data.publicUrl,
+      file_size: file.size,
+      file_type: file.type,
+      uploaded_by: 'current_user_id', // This would be replaced with the actual user ID
+      created_at: new Date().toISOString()
+    };
+  }
 };

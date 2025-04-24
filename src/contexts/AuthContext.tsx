@@ -50,8 +50,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUser = async () => {
     try {
-      const user = await supabaseService.getCurrentUser();
-      setUser(user);
+      const userData = await supabaseService.getCurrentUser();
+      if (userData) {
+        // Transform userData to match User interface
+        setUser({
+          ...userData,
+          email: userData.email || '',
+        });
+      }
     } catch (error) {
       console.error('Error fetching user:', error);
     } finally {

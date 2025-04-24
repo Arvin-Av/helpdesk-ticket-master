@@ -44,7 +44,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onView }) => {
         <div className="flex items-center space-x-4">
           <PriorityBadge priority={ticket.priority} />
           <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(ticket.updatedAt), { addSuffix: true })}
+            {formatDistanceToNow(new Date(ticket.updated_at), { addSuffix: true })}
           </span>
         </div>
         <Button variant="outline" size="sm" onClick={() => onView(ticket.id)}>
