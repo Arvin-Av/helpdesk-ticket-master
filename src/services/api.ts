@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseService } from "./supabaseService";
 import { Ticket, Comment, Attachment, Department, User, TicketPriority, TicketStatus } from "@/types";
@@ -122,17 +121,39 @@ export const ticketService = {
     };
   },
 
+  // Update a ticket's status
+  updateTicketStatus: async (ticketId: string, status: TicketStatus): Promise<void> => {
+    const { error } = await supabase
+      .from('tickets')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ticketId);
+    
+    if (error) throw error;
+  },
+
+  // Assign a ticket to a user
+  assignTicket: async (ticketId: string, userId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('tickets')
+      .update({ 
+        assigned_to: userId,
+        status: 'in-progress' as TicketStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ticketId);
+    
+    if (error) throw error;
+  },
+
   // Update a ticket
   updateTicket: async (id: string, updates: Partial<Ticket>): Promise<void> => {
     const { error } = await supabase
       .from('tickets')
       .update({
-        subject: updates.subject,
-        description: updates.description,
-        priority: updates.priority,
-        status: updates.status,
-        department_id: updates.department_id,
-        assigned_to: updates.assigned_to,
+        ...updates,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);

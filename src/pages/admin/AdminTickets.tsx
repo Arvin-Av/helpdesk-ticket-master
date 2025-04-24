@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ticketService } from '@/services/api';
@@ -206,7 +205,7 @@ const AdminTickets = () => {
                           <PriorityBadge priority={ticket.priority} />
                         </TableCell>
                         <TableCell>
-                          {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                          {format(new Date(ticket.created_at), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end items-center space-x-2">
@@ -226,7 +225,7 @@ const AdminTickets = () => {
                               </SelectContent>
                             </Select>
                             
-                            {!ticket.assignedTo && ticket.status !== 'closed' && (
+                            {!ticket.assigned_to && ticket.status !== 'closed' && (
                               <Button 
                                 variant="outline" 
                                 size="sm"

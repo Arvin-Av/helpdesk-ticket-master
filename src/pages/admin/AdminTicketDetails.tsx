@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ticketService, userService } from '@/services/api';
+import { ticketService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -52,12 +52,8 @@ const AdminTicketDetails = () => {
   });
   
   const updateStatusMutation = useMutation({
-    mutationFn: (status: TicketStatus) => {
-      if (!ticketId) {
-        throw new Error("Missing ticket ID");
-      }
-      return ticketService.updateTicketStatus(ticketId, status);
-    },
+    mutationFn: (status: TicketStatus) => 
+      ticketService.updateTicketStatus(ticketId!, status),
     onSuccess: () => {
       toast.success("Ticket status updated");
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
@@ -68,12 +64,8 @@ const AdminTicketDetails = () => {
   });
   
   const assignTicketMutation = useMutation({
-    mutationFn: () => {
-      if (!ticketId || !user?.id) {
-        throw new Error("Missing required information");
-      }
-      return ticketService.assignTicket(ticketId, user.id);
-    },
+    mutationFn: () => 
+      ticketService.assignTicket(ticketId!, user?.id!),
     onSuccess: () => {
       toast.success("Ticket assigned to you");
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
@@ -386,7 +378,6 @@ const AdminTicketDetails = () => {
   );
 };
 
-// Keep a reference to the users for display
 const users = [
   { id: 'user-1', name: 'John Doe' },
   { id: 'user-2', name: 'Jane Smith' },
