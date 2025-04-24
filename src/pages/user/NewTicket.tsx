@@ -17,12 +17,13 @@ import { PlusCircle, X, FileText, Upload } from 'lucide-react';
 import { ticketService, departmentService } from '@/services/api';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { TicketPriority } from '@/types';
 
 const formSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters").max(100),
   description: z.string().min(20, "Description must be at least 20 characters"),
   priority: z.enum(["low", "medium", "high"]),
-  department: z.string().min(1, "Please select a department"),
+  department_id: z.string().min(1, "Please select a department"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -38,19 +39,22 @@ const NewTicket = () => {
   });
 
   const createTicketMutation = useMutation({
-    mutationFn: (data: FormData) => ticketService.createTicket(
-      data.subject,
-      data.description, 
-      data.priority as any, 
-      data.department, 
-      user?.id || '',
-      file || undefined
-    ),
+    mutationFn: (data: FormData) => {
+      if (!user) throw new Error("User not authenticated");
+      
+      return ticketService.createTicket({
+        subject: data.subject,
+        description: data.description,
+        priority: data.priority as TicketPriority,
+        department_id: data.department_id,
+        user_id: user.id,
+      });
+    },
     onSuccess: () => {
       toast.success("Ticket created successfully!");
       navigate('/dashboard');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Failed to create ticket. Please try again.");
       console.error("Error creating ticket:", error);
     }
@@ -62,7 +66,7 @@ const NewTicket = () => {
       subject: "",
       description: "",
       priority: "medium",
-      department: "",
+      department_id: "",
     },
   });
 
@@ -164,7 +168,7 @@ const NewTicket = () => {
                                 <RadioGroupItem value="low" />
                               </FormControl>
                               <FormLabel className="font-normal">
-                                <span className="inline-block w-2 h-2 rounded-full bg-priority-low mr-2"></span>
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
                                 Low
                               </FormLabel>
                             </FormItem>
@@ -173,7 +177,7 @@ const NewTicket = () => {
                                 <RadioGroupItem value="medium" />
                               </FormControl>
                               <FormLabel className="font-normal">
-                                <span className="inline-block w-2 h-2 rounded-full bg-priority-medium mr-2"></span>
+                                <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>
                                 Medium
                               </FormLabel>
                             </FormItem>
@@ -182,7 +186,7 @@ const NewTicket = () => {
                                 <RadioGroupItem value="high" />
                               </FormControl>
                               <FormLabel className="font-normal">
-                                <span className="inline-block w-2 h-2 rounded-full bg-priority-high mr-2"></span>
+                                <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
                                 High
                               </FormLabel>
                             </FormItem>
@@ -195,7 +199,7 @@ const NewTicket = () => {
                   
                   <FormField
                     control={form.control}
-                    name="department"
+                    name="department_id"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Department</FormLabel>
@@ -210,7 +214,7 @@ const NewTicket = () => {
                           </FormControl>
                           <SelectContent>
                             {departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.name}>
+                              <SelectItem key={dept.id} value={dept.id}>
                                 {dept.name}
                               </SelectItem>
                             ))}

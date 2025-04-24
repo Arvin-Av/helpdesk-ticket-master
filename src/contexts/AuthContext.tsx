@@ -56,6 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser({
           ...userData,
           email: userData.email || '',
+          role: (userData.role as 'user' | 'admin') || 'user'
         });
       }
     } catch (error) {
@@ -74,6 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       toast.success('Successfully logged in');
       navigate('/dashboard');
     } catch (error: any) {
+      console.error('Login error:', error);
       toast.error(error.message || 'Failed to login');
       throw error;
     } finally {

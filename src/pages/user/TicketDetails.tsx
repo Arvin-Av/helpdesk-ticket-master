@@ -26,10 +26,16 @@ const TicketDetails = () => {
   
   const { data: ticket, isLoading } = useQuery({
     queryKey: ['ticket', ticketId],
-    queryFn: () => ticketId ? ticketService.getTicketById(ticketId) : Promise.resolve(undefined),
+    queryFn: () => ticketId ? ticketService.getTicketById(ticketId) : Promise.resolve(null),
     enabled: !!ticketId,
   });
   
+  const { data: comments = [] } = useQuery({
+    queryKey: ['ticketComments', ticketId],
+    queryFn: () => ticketId ? ticketService.getTicketComments(ticketId) : Promise.resolve([]),
+    enabled: !!ticketId,
+  });
+
   const addCommentMutation = useMutation({
     mutationFn: () => {
       if (!ticketId || !user?.id || !newComment.trim()) {
@@ -40,7 +46,7 @@ const TicketDetails = () => {
     onSuccess: () => {
       toast.success("Comment added successfully");
       setNewComment('');
-      queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['ticketComments', ticketId] });
     },
     onError: () => {
       toast.error("Failed to add comment");
@@ -90,7 +96,7 @@ const TicketDetails = () => {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold">Ticket #{ticket.id.split('-')[1]}</h1>
+          <h1 className="text-2xl font-bold">Ticket #{ticket.id.split('-')[1] || ticket.id.substring(0, 8)}</h1>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -107,7 +113,7 @@ const TicketDetails = () => {
                   <Badge variant="outline">Department: {ticket.department}</Badge>
                   <PriorityBadge priority={ticket.priority} />
                   <Badge variant="outline">
-                    Created {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}
+                    Created {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
                   </Badge>
                 </div>
                 
@@ -124,15 +130,15 @@ const TicketDetails = () => {
                           <Paperclip className="h-4 w-4 mr-2 text-gray-500" />
                           <div>
                             <a 
-                              href={attachment.filePath} 
+                              href={attachment.file_path} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-sm font-medium text-blue-600 hover:underline"
                             >
-                              {attachment.fileName}
+                              {attachment.file_name}
                             </a>
                             <p className="text-xs text-gray-500">
-                              {(attachment.fileSize / 1024).toFixed(1)} KB
+                              {(attachment.file_size / 1024).toFixed(1)} KB
                             </p>
                           </div>
                         </div>
@@ -145,22 +151,24 @@ const TicketDetails = () => {
                 
                 <div className="space-y-4">
                   <h3 className="font-medium">Comments</h3>
-                  {ticket.comments && ticket.comments.length > 0 ? (
+                  {comments.length > 0 ? (
                     <div className="space-y-4">
-                      {ticket.comments.map(comment => (
+                      {comments.map(comment => (
                         <div key={comment.id} className="flex gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback>
-                              {comment.userName.split(' ').map(part => part[0]).join('').toUpperCase()}
+                              {comment.user_name ? 
+                                comment.user_name.split(' ').map(part => part[0]).join('').toUpperCase() : 
+                                'U'}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-medium">
-                                {comment.userName}
+                                {comment.user_name || 'User'}
                               </p>
                               <span className="text-xs text-gray-500">
-                                {format(new Date(comment.createdAt), 'MMM d, h:mm a')}
+                                {format(new Date(comment.created_at), 'MMM d, h:mm a')}
                               </span>
                             </div>
                             <p className="text-sm text-gray-700">{comment.content}</p>
@@ -218,14 +226,14 @@ const TicketDetails = () => {
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Created</h3>
                   <p className="text-sm mt-1">
-                    {format(new Date(ticket.createdAt), 'MMMM d, yyyy h:mm a')}
+                    {format(new Date(ticket.created_at), 'MMMM d, yyyy h:mm a')}
                   </p>
                 </div>
                 
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Last Updated</h3>
                   <p className="text-sm mt-1">
-                    {format(new Date(ticket.updatedAt), 'MMMM d, yyyy h:mm a')}
+                    {format(new Date(ticket.updated_at), 'MMMM d, yyyy h:mm a')}
                   </p>
                 </div>
                 
@@ -237,7 +245,7 @@ const TicketDetails = () => {
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Assigned To</h3>
                   <div className="flex items-center mt-1">
-                    {ticket.assignedTo ? (
+                    {ticket.assigned_to ? (
                       <div className="flex items-center">
                         <Avatar className="h-6 w-6 mr-2">
                           <AvatarFallback>

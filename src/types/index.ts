@@ -2,12 +2,12 @@
 // User types
 export interface User {
   id: string;
-  name: string;
+  name: string | null;
   email: string;
   role: 'user' | 'admin';
   department?: string;
-  department_id?: string;
-  avatar_url?: string;
+  department_id?: string | null;
+  avatar_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -25,7 +25,7 @@ export interface Ticket {
   department: string;
   department_id: string;
   user_id: string;
-  assigned_to?: string;
+  assigned_to?: string | null;
   created_at: string;
   updated_at: string;
   attachments?: Attachment[];
@@ -40,6 +40,7 @@ export interface Comment {
   content: string;
   is_internal: boolean;
   created_at: string;
+  user_name?: string;
 }
 
 // Attachment types
@@ -58,5 +59,6 @@ export interface Attachment {
 export interface Department {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
+  created_at?: string;
 }
