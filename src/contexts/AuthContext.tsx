@@ -1,7 +1,8 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
-import { authService } from '@/services/api';
+import { supabase } from '@/integrations/supabase/client';
+import { supabaseService } from '@/services/supabaseService';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -10,44 +11,64 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, department: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for existing user session on app load
-    const checkAuth = () => {
-      const currentUser = authService.getCurrentUser();
-      setUser(currentUser);
-      setLoading(false);
+    // Check current auth status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchUser();
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUser();
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
     };
-    
-    checkAuth();
   }, []);
+
+  const fetchUser = async () => {
+    try {
+      const user = await supabaseService.getCurrentUser();
+      setUser(user);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const user = await authService.login(email, password);
-      setUser(user);
-      toast.success(`Welcome back, ${user?.name}!`);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       
-      // Redirect based on role
-      if (user?.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (error) {
-      toast.error('Invalid email or password');
+      toast.success('Successfully logged in');
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to login');
       throw error;
     } finally {
       setLoading(false);
@@ -57,23 +78,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (name: string, email: string, password: string, department: string) => {
     try {
       setLoading(true);
-      const user = await authService.register(name, email, password, department);
-      setUser(user);
-      toast.success(`Welcome, ${name}! Your account has been created.`);
-      navigate('/dashboard');
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            department
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Registration successful! Please check your email to verify your account.');
+      navigate('/login');
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
+      toast.error(error.message || 'Failed to register');
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-    toast.info('You have been logged out');
-    navigate('/login');
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      setUser(null);
+      toast.info('You have been logged out');
+      navigate('/login');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to logout');
+    }
   };
 
   const isAuthenticated = !!user;

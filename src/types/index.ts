@@ -6,6 +6,8 @@ export interface User {
   email: string;
   role: 'user' | 'admin';
   department?: string;
+  department_id?: string;
+  avatar_url?: string;
   createdAt: string;
 }
 
@@ -20,10 +22,11 @@ export interface Ticket {
   priority: TicketPriority;
   status: TicketStatus;
   department: string;
-  createdBy: string;
-  assignedTo?: string;
-  createdAt: string;
-  updatedAt: string;
+  department_id: string;
+  user_id: string;
+  assigned_to?: string;
+  created_at: string;
+  updated_at: string;
   attachments?: Attachment[];
   comments?: Comment[];
 }
@@ -31,28 +34,28 @@ export interface Ticket {
 // Comment types
 export interface Comment {
   id: string;
-  ticketId: string;
-  userId: string;
-  userName: string;
+  ticket_id: string;
+  user_id: string;
   content: string;
-  isInternal: boolean;
-  createdAt: string;
+  is_internal: boolean;
+  created_at: string;
 }
 
 // Attachment types
 export interface Attachment {
   id: string;
-  ticketId: string;
-  fileName: string;
-  filePath: string;
-  fileSize: number;
-  fileType: string;
-  uploadedBy: string;
-  uploadedAt: string;
+  ticket_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  uploaded_by: string;
+  created_at: string;
 }
 
 // Department types
 export interface Department {
   id: string;
   name: string;
+  description?: string;
 }
