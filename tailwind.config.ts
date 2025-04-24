@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Ticket priority colors
+				priority: {
+					low: '#4ade80',    // Green for low priority
+					medium: '#facc15', // Yellow for medium priority
+					high: '#f87171',   // Red for high priority
+				},
+				// Ticket status colors
+				status: {
+					open: '#60a5fa',     // Blue for open tickets
+					inProgress: '#8b5cf6', // Purple for in progress tickets
+					resolved: '#34d399', // Green for resolved tickets
+					closed: '#9ca3af',   // Gray for closed tickets
 				}
 			},
 			borderRadius: {
