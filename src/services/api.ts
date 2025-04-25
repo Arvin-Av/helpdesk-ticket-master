@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseService } from "./supabaseService";
 import { Ticket, Comment, Attachment, Department, User, TicketPriority, TicketStatus } from "@/types";
@@ -163,11 +164,12 @@ export const ticketService = {
 
   // Get comments for a ticket
   getTicketComments: async (ticketId: string): Promise<Comment[]> => {
+    // Fix the query to properly specify the relationship between comments and profiles
     const { data, error } = await supabase
       .from('comments')
       .select(`
         *,
-        profiles(name)
+        profiles:user_id(name)
       `)
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true });
