@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseService } from "./supabaseService";
 import { Ticket, Comment, Attachment, Department, User, TicketPriority, TicketStatus } from "@/types";
@@ -164,28 +163,42 @@ export const ticketService = {
 
   // Get comments for a ticket
   getTicketComments: async (ticketId: string): Promise<Comment[]> => {
-    // Fix the query to properly specify the relationship between comments and profiles
-    const { data, error } = await supabase
+    // First, get the comments
+    const { data: comments, error } = await supabase
       .from('comments')
-      .select(`
-        *,
-        profiles:user_id(name)
-      `)
+      .select('*')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    
-    if (!data) return [];
+    if (!comments) return [];
 
-    return data.map(comment => ({
+    // Get unique user IDs from comments
+    const userIds = [...new Set(comments.map(comment => comment.user_id))];
+    
+    // Fetch profile data for these users
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', userIds);
+    
+    // Create a map of user IDs to names for quick lookup
+    const userNameMap = new Map();
+    if (profiles) {
+      profiles.forEach(profile => {
+        userNameMap.set(profile.id, profile.name || '');
+      });
+    }
+    
+    // Combine the data
+    return comments.map(comment => ({
       id: comment.id,
       ticket_id: comment.ticket_id,
       user_id: comment.user_id,
       content: comment.content,
       is_internal: comment.is_internal || false,
       created_at: comment.created_at,
-      user_name: comment.profiles?.name || ''
+      user_name: userNameMap.get(comment.user_id) || ''
     }));
   },
 
