@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Ticket } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, Navigate } from 'react-router-dom';
+import { toast } from "sonner";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,8 +19,21 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Demo accounts for easy access
+const DEMO_ACCOUNTS = {
+  admin: {
+    email: 'admin@example.com',
+    password: 'password'
+  },
+  user: {
+    email: 'john@example.com',
+    password: 'password'
+  }
+};
+
 const Login = () => {
   const { login, isAuthenticated, isAdmin } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -30,9 +44,38 @@ const Login = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
+      setIsProcessing(true);
       await login(data.email, data.password);
+    } catch (error: any) {
+      console.error("Login error:", error);
+      
+      // Check if this is one of our demo accounts
+      if (
+        (data.email === DEMO_ACCOUNTS.admin.email || data.email === DEMO_ACCOUNTS.user.email) && 
+        data.password === 'password'
+      ) {
+        // For demo accounts, we'll provide a more helpful message
+        toast.error("The demo account exists but could not be authenticated. Please check the Supabase users settings.");
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const loginAsDemoUser = async (type: 'admin' | 'user') => {
+    const account = DEMO_ACCOUNTS[type];
+    form.setValue('email', account.email);
+    form.setValue('password', account.password);
+    
+    try {
+      setIsProcessing(true);
+      await login(account.email, account.password);
+      toast.success(`Successfully logged in as ${type}`);
     } catch (error) {
       console.error("Login error:", error);
+      toast.error(`Failed to log in as demo ${type}. This account may need to be created in Supabase.`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -86,11 +129,42 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Logging in..." : "Login"}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isProcessing}
+              >
+                {isProcessing ? "Logging in..." : "Login"}
               </Button>
             </form>
           </Form>
+
+          <div className="mt-8 space-y-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-gray-500">Quick Access</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => loginAsDemoUser('user')}
+                disabled={isProcessing}
+              >
+                Login as User
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => loginAsDemoUser('admin')}
+                disabled={isProcessing}
+              >
+                Login as Admin
+              </Button>
+            </div>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-center border-t pt-6">
           <p className="text-sm text-gray-500">
